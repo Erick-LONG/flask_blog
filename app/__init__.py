@@ -21,8 +21,7 @@ def create_app(config_name):
     moment.init_app(app)
     db.init_app(app)
 
-    from . import main as main_blueprint
+    # 附加使用蓝本路由和错误页面
+    from .main import main as main_blueprint
     app.register_blueprint(main_blueprint)
-
-    # 附加路由和错误页面
     return app
