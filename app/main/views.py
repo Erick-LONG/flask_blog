@@ -23,6 +23,5 @@ def index():
 		else:
 			session['known'] = True
 		session['name']=form.name.data
-		form.name.data=''
 		return redirect(url_for('.index')) # 蓝本中index函数在main.index下
 	return render_template('index.html', name=session.get('name'), form=form, known=session.get('known',False))
