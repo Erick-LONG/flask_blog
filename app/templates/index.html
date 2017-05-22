@@ -1,17 +1,24 @@
 {% extends 'base.html' %}
 {% import 'bootstrap/wtf.html' as wtf %}
 
-{% block title %}flasky{% endblock %}
+{% block title %}Flasky-首页{% endblock %}
 
 {% block page_content %}
     <div class="page-header">
-        <h1>Hello,{% if name %}{{ name }}{% else %}Stranger{% endif %}!</h1>
-        {% if not known %}
-        <p>很高兴见到你</p>
+
+        <h1>Hello,
+        {% if current_user.is_authenticated %}
+            {{ current_user.name }}
         {% else %}
-        <p>又见到你了</p>
-        {% endif %}
+            访客
+        {% endif %}!
+        </h1>
+{#        {% if not known %}#}
+{#        <p>很高兴见到你</p>#}
+{#        {% else %}#}
+{#        <p>又见到你了</p>#}
+{#        {% endif %}#}
     </div>
-    <!-- 利用bootstrap form渲染表单-->
-    {{ wtf.quick_form(form) }}
+{#    <!-- 利用bootstrap form渲染表单-->#}
+{#    {{ wtf.quick_form(form) }}#}
 {% endblock %}

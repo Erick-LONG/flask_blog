@@ -1,0 +1,10 @@
+亲爱的 {{ user.username }},
+
+为了确认您的新邮箱地址，请点击以下链接:
+
+{{ url_for('auth.change_email', token=token, _external=True) }}
+
+
+Flasky 团队
+
+Note: 回复这封邮件是不被监控的。

@@ -21,7 +21,21 @@
     </div>
     <div class="navbar-collapse collapse">
         <ul class="nav navbar-nav">
-            <li><a href="/">Home</a></li>
+            <li><a href="/">主页</a></li>
+        </ul>
+        <ul class="nav navbar-nav navbar-right">
+            {% if current_user.is_authenticated %}
+            <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">账户 <b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="{{ url_for('auth.change_password') }}">更改密码</a></li>
+                        <li><a href="{{ url_for('auth.change_email_request') }}">更换邮箱</a></li>
+                        <li><a href="{{ url_for('auth.logout') }}">退出登陆</a></li>
+                    </ul>
+            </li>
+            {% else %}
+            <li><a href="{{ url_for('auth.login') }}">立即登陆</a></li>
+            {% endif %}
         </ul>
     </div>
 </div>
