@@ -8,7 +8,7 @@
 
         <h1>Hello,
         {% if current_user.is_authenticated %}
-            {{ current_user.name }}
+            {{ current_user.username }}
         {% else %}
             访客
         {% endif %}!
