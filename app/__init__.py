@@ -25,7 +25,7 @@ def create_app(config_name):
     mail.init_app(app)
     moment.init_app(app)
     db.init_app(app)
-    login_manager.init_app(app)
+    login_manager.init_app(app) #初始化登陆
     # 附加使用蓝本路由和错误页面
     from .main import main as main_blueprint
     app.register_blueprint(main_blueprint)
