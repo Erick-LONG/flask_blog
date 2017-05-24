@@ -6,6 +6,7 @@ from .forms import NameForm
 from .. import db
 from ..models import User
 from ..email import send_mail
+from flask import abort
 
 # 使用蓝本自定义路由
 @main.route('/', methods=['get', 'post'])
@@ -42,3 +43,10 @@ def for_admins_only():
 @permission_required(Permission.MODERATE_COMMENTS)
 def for_moderator_only():
 	return 'For comment moderator'
+
+@main.route('/user/<username>')
+def user(username):
+	user = User.query.filter_by(username=username).first()
+	if user is None:
+		abort(404)
+	return render_template('user.html',user=user)
