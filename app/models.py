@@ -7,7 +7,7 @@ from flask_login import login_required
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask import current_app
 from . import db
-
+from datetime import datetime
 # 加载用户的回调函数
 @login_manager.user_loader
 def load_user(user_id):
@@ -66,6 +66,11 @@ class User(UserMixin,db.Model):
 	role_id=db.Column(db.Integer,db.ForeignKey('roles.id'))
 	password_hash=db.Column(db.String(128))
 	confirmed = db.Column(db.Boolean,default=False)
+	name = db.Column(db.String(64))
+	location = db.Column(db.String(64))
+	about_me=db.Column(db.Text())# 和String的区别是不需要指定最大长度
+	member_since=db.Column(db.DateTime(),default=datetime.utcnow)# default 可以接受函数为默认值，在需要的时候回自定调用指定的函数，所以不需要加（）
+	last_seen=db.Column(db.DateTime(),default=datetime.utcnow)# 初始值是当前时间
 
 	@property
 	def password(self):
@@ -138,6 +143,10 @@ class User(UserMixin,db.Model):
 			   (self.role.permissions & permissions)==permissions
 	def is_administrator(self): # 认证为管理员角色判断
 		return self.can(Permission.ADMINISTER)
+
+	def ping(self):
+		self.last_seen=datetime.utcnow()
+		db.session.add(self)
 
 	def __repr__(self):
 		return '<User %r>' % self.username
