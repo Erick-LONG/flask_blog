@@ -37,8 +37,7 @@ class PasswordResetRequestForm(FlaskForm):
     submit = SubmitField('重置密码')
 
 class PasswordResetForm(FlaskForm):
-    email = StringField('邮箱', validators=[DataRequired(), Length(1, 64),
-                                             Email()])
+    email = StringField('邮箱', validators=[DataRequired(), Length(1, 64),Email()])
     password = PasswordField('新密码', validators=[
         DataRequired(), EqualTo('password2', message='密码必须一致')])
     password2 = PasswordField('再次确认密码', validators=[DataRequired()])
