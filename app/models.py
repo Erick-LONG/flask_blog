@@ -1,7 +1,7 @@
 #！/usr/bin/env python
 # -*- coding:utf-8 -*-
 from werkzeug.security import generate_password_hash,check_password_hash
-from flask_login import UserMixin,AnonymousUserMixin
+from flask_login import UserMixin,AnonymousUserMixin # 匿名用户角色
 from . import login_manager
 from flask_login import login_required
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
@@ -24,8 +24,8 @@ class Role(db.Model):
 	id = db.Column(db.Integer,primary_key=True)
 	name = db.Column(db.String(64),unique=True)
 	default = db.Column(db.Boolean,default=False,index=True) # 默认角色
-	permissions = db.Column(db.Integer)# 位标识，
-	users = db.relationship('User',backref='role',lazy='dynamic')
+	permissions = db.Column(db.Integer)# 位标志，各个操作都对应一个位位置，能执行某项操作的角色，其位会被设为1
+	users = db.relationship('User',backref='role',lazy='dynamic') # 不加载记录，但是提供加载记录的查询
 	@staticmethod
 	def insert_roles():
 		roles = {
@@ -40,24 +40,24 @@ class Role(db.Model):
 
 		}
 		for r in roles:
-			role = Role.query.filter_by(name=r).first()
-			if role is None:
-				role=Role(name=r)
-			role.permissions=roles[r][0]
-			role.default=roles[r][1]
-			db.session.add(role)
-		db.session.commit()
+			role = Role.query.filter_by(name=r).first()# 先根据角色名查找现有的角色，然后再更新
+			if role is None:# 如果没有该角色名时才会创建新角色
+				role=Role(name=r) # 创建新角色
+			role.permissions=roles[r][0] # 设置该角色对应的权限
+			role.default=roles[r][1] # 设置该角色对应权限的默认值
+			db.session.add(role) # 添加到数据库
+		db.session.commit() # 提交数据库
 
 	def __repr__(self):
 		return '<Role %r>'% self.name
 
 class User(UserMixin,db.Model):
 	def __init__(self,**kwargs):
-		super(User,self).__init__(**kwargs)
-		if self.role is None:
-			if self.email==current_app.config['FLASKY_ADMIN']:
-				self.role=Role.query.filter_by(permissions=0xff).first()
-			if self.role is None:
+		super(User,self).__init__(**kwargs)# 调用父类的构造函数
+		if self.role is None: # 如果创建父类对象之后还没有定义角色
+			if self.email==current_app.config['FLASKY_ADMIN']:# 根据电子邮件地址
+				self.role=Role.query.filter_by(permissions=0xff).first() # 设置其为管理员
+			if self.role is None: # 或者设置为默认角色
 				self.role=Role.query.filter_by(default=True).first()
 	__tablename__ = 'users'
 	id = db.Column(db.Integer, primary_key=True)
@@ -133,9 +133,10 @@ class User(UserMixin,db.Model):
 	def load_user(user_id):
 		return User.query.get(int(user_id))
 	def can(self,permissions):
-		return self.role is not None and (self.role.permissions & permissions)==permissions
-
-	def is_administrator(self):
+		# 在请求和赋予角色这两种权限进行位的“与”运算，如果成立，则允许用户执行此项操作
+		return self.role is not None and \
+			   (self.role.permissions & permissions)==permissions
+	def is_administrator(self): # 认证为管理员角色判断
 		return self.can(Permission.ADMINISTER)
 
 	def __repr__(self):
@@ -151,7 +152,7 @@ class Permission:
 class AnonymousUser(AnonymousUserMixin):
 	def can(self, permissions):
 		return False
-
 	def is_administrator(self):
 		return False
+# 用户未登录时current_user的值，并且不用用户登陆即可检查用户权限
 login_manager.anonymous_user=AnonymousUser

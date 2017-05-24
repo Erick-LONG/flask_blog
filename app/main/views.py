@@ -25,3 +25,20 @@ def index():
 		session['name']=form.name.data
 		return redirect(url_for('.index')) # 蓝本中index函数在main.index下
 	return render_template('index.html', name=session.get('name'), form=form, known=session.get('known',False))
+
+# 举例演示使用权限检查装饰器
+from app.decorators import admin_required,permission_required
+from ..models import Permission
+from flask_login import login_required
+
+@main.route('/admin')
+@login_required
+@admin_required
+def for_admins_only():
+	return 'For administrators'
+
+@main.route('/moderator')
+@login_required
+@permission_required(Permission.MODERATE_COMMENTS)
+def for_moderator_only():
+	return 'For comment moderator'
