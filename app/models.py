@@ -8,7 +8,10 @@ from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask import current_app,request
 from . import db
 from datetime import datetime
+<<<<<<< HEAD
 import hashlib
+=======
+>>>>>>> origin/master
 # 加载用户的回调函数
 @login_manager.user_loader
 def load_user(user_id):
@@ -73,10 +76,17 @@ class User(UserMixin,db.Model):
 	confirmed = db.Column(db.Boolean,default=False)
 	name = db.Column(db.String(64))
 	location = db.Column(db.String(64))
+<<<<<<< HEAD
 	about_me = db.Column(db.Text())  # 和String的区别是不需要指定最大长度
 	member_since = db.Column(db.DateTime(), default=datetime.utcnow)  # default 可以接受函数为默认值，在需要的时候回自定调用指定的函数，所以不需要加（）
 	last_seen = db.Column(db.DateTime(), default=datetime.utcnow)  # 初始值是当前时间
 	avatar_hash = db.Column(db.String(32))# 头像哈希值存储到数据库
+=======
+	about_me=db.Column(db.Text())# 和String的区别是不需要指定最大长度
+	member_since=db.Column(db.DateTime(),default=datetime.utcnow)# default 可以接受函数为默认值，在需要的时候回自定调用指定的函数，所以不需要加（）
+	last_seen=db.Column(db.DateTime(),default=datetime.utcnow)# 初始值是当前时间
+
+>>>>>>> origin/master
 	@property
 	def password(self):
 		raise AttributeError('密码不是一个可读属性') #只写属性
@@ -151,6 +161,7 @@ class User(UserMixin,db.Model):
 		return self.can(Permission.ADMINISTER)
 
 	def ping(self):
+<<<<<<< HEAD
 		self.last_seen = datetime.utcnow()  # 获取当前时间
 		db.session.add(self)  # 提交时间到数据库
 
@@ -161,6 +172,10 @@ class User(UserMixin,db.Model):
 			url='http://www.gravatar.com/avatar'
 		hash = self.avatar_hash or hashlib.md5(self.email.encode('utf-8')).hexdigest()
 		return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(url=url,hash=hash,size=size,default=default,rating=rating)
+=======
+		self.last_seen=datetime.utcnow()
+		db.session.add(self)
+>>>>>>> origin/master
 
 	def __repr__(self):
 		return '<User %r>' % self.username
