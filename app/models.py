@@ -75,11 +75,8 @@ class User(UserMixin,db.Model):
 	location = db.Column(db.String(64))
 	about_me = db.Column(db.Text())  # 和String的区别是不需要指定最大长度
 	member_since = db.Column(db.DateTime(), default=datetime.utcnow)  # default 可以接受函数为默认值，在需要的时候回自定调用指定的函数，所以不需要加（）
-	last_seen = db.Column(db.DateTime(), default=datetime.utcnow)  # 初始值是当前时间
+	last_seen= db.Column(db.DateTime(), default=datetime.utcnow)  # 初始值是当前时间
 	avatar_hash = db.Column(db.String(32))# 头像哈希值存储到数据库
-	about_me=db.Column(db.Text())# 和String的区别是不需要指定最大长度
-	member_since=db.Column(db.DateTime(),default=datetime.utcnow)# default 可以接受函数为默认值，在需要的时候回自定调用指定的函数，所以不需要加（）
-	last_seen=db.Column(db.DateTime(),default=datetime.utcnow)# 初始值是当前时间
 	@property
 	def password(self):
 		raise AttributeError('密码不是一个可读属性') #只写属性
@@ -164,8 +161,6 @@ class User(UserMixin,db.Model):
 			url='http://www.gravatar.com/avatar'
 		hash = self.avatar_hash or hashlib.md5(self.email.encode('utf-8')).hexdigest()
 		return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(url=url,hash=hash,size=size,default=default,rating=rating)
-		self.last_seen=datetime.utcnow()
-		db.session.add(self)
 
 	def __repr__(self):
 		return '<User %r>' % self.username
