@@ -150,4 +150,11 @@ def change_email(token):
         flash('无效的请求')
     return redirect(url_for('main.index'))
 
-
+@auth.before_app_request
+def before_request():
+    if current_user.is_authenticated:
+        current_user.ping()
+        # 不在认证蓝本中
+        if not current_user.confirmed and request.endpoint[:5] !='auth.' \
+                and request.endpoint != 'static':
+            return redirect(url_for('auth.unconfirmed'))
