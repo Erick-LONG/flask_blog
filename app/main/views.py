@@ -48,7 +48,6 @@ def for_moderator_only():
 @main.route('/user/<username>')
 def user(username):
 	user = User.query.filter_by(username=username).first()
-<<<<<<< HEAD
 	#user = User.query.filter_by(username=username).first_or_404()
 	if user is None:
 		abort(404)
@@ -96,9 +95,6 @@ def edit_profile_admin(id):
 	form.location.data = user.location
 	form.about_me.data = user.about_me
 	return render_template('edit_profile.html',form=form,user=user)
-
-=======
 	if user is None:
 		abort(404)
 	return render_template('user.html',user=user)
->>>>>>> origin/master
