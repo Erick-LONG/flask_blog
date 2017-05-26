@@ -39,3 +39,7 @@ class EditProflieAdminForm(FlaskForm):
 		# 首先检查字段是否发生了变化，并保证新值不和其他用户的字段值重复
 		if filed.data != self.username and User.query.filter_by(username=filed.data).first():
 			raise ValidationError('用户名已被使用')
+
+class PostForm(FlaskForm):
+	body = TextAreaField('你在想什么？',validators=[DataRequired()])
+	submit = SubmitField('提交')

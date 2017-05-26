@@ -51,6 +51,12 @@ class Role(db.Model):
 
 	def __repr__(self):
 		return '<Role %r>'% self.name
+class Post(db.Model):
+	__tablename__ = 'posts'
+	id = db.Column(db.Integer, primary_key=True)
+	body = db.Column(db.Text)
+	timestamp = db.Column(db.DateTime,index=True,default=datetime.utcnow)
+	author_id=db.Column(db.Integer,db.ForeignKey('users.id'))
 
 class User(UserMixin,db.Model):
 	def __init__(self,**kwargs):
@@ -77,6 +83,7 @@ class User(UserMixin,db.Model):
 	member_since = db.Column(db.DateTime(), default=datetime.utcnow)  # default 可以接受函数为默认值，在需要的时候回自定调用指定的函数，所以不需要加（）
 	last_seen= db.Column(db.DateTime(), default=datetime.utcnow)  # 初始值是当前时间
 	avatar_hash = db.Column(db.String(32))# 头像哈希值存储到数据库
+	posts = db.relationship('Post',backref = 'author',lazy='dynamic')
 	@property
 	def password(self):
 		raise AttributeError('密码不是一个可读属性') #只写属性

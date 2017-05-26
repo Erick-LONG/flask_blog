@@ -2,10 +2,10 @@
 # -*- coding:utf-8 -*-
 from flask import render_template,session,redirect,url_for,current_app,flash,abort
 from . import main
-from .forms import NameForm,EditProflieForm,EditProflieAdminForm
+from .forms import NameForm,EditProflieForm,EditProflieAdminForm,PostForm
 from flask_login import login_required, current_user
 from .. import db
-from ..models import User,Role
+from ..models import User,Role,Post
 from ..email import send_mail
 from flask import abort
 
@@ -16,21 +16,30 @@ from flask_login import login_required
 # 使用蓝本自定义路由
 @main.route('/', methods=['get', 'post'])
 def index():
-	#name = None
-	form = NameForm()
-	if form.validate_on_submit():
-		user = User.query.filter_by(username=form.name.data).first()
-		if user is None:
-			user = User(username=form.name.data)
-			db.session.add(user)
-			session['known']=False
-			if current_app.config['FLASKY_ADMIN']:
-				send_mail(current_app.config['FLASKY_ADMIN'],'New user','mail/new_user',user=user)
-		else:
-			session['known'] = True
-		session['name']=form.name.data
-		return redirect(url_for('.index')) # 蓝本中index函数在main.index下
-	return render_template('index.html', name=session.get('name'), form=form, known=session.get('known',False))
+	# name = None
+	# form = NameForm()
+	# if form.validate_on_submit():
+	# 	user = User.query.filter_by(username=form.name.data).first()
+	# 	if user is None:
+	# 		user = User(username=form.name.data)
+	# 		db.session.add(user)
+	# 		session['known']=False
+	# 		if current_app.config['FLASKY_ADMIN']:
+	# 			send_mail(current_app.config['FLASKY_ADMIN'],'New user','mail/new_user',user=user)
+	# 	else:
+	# 		session['known'] = True
+	# 	session['name']=form.name.data
+	# 	return redirect(url_for('.index')) # 蓝本中index函数在main.index下
+	# return render_template('index.html', name=session.get('name'), form=form, known=session.get('known',False))
+	form = PostForm()
+	# 检查用户是否有写文章的权限并检查是否可以通过验证
+	if current_user.can(Permission.WRITE_ARTICLES) and form.validate_on_submit():
+		# current_user._get_current_object() 新文章对象，内含真正的用户对象
+		post = Post(body = form.body.data,author=current_user._get_current_object())
+		db.session.add(post)
+		return redirect(url_for('.index'))
+	posts = Post.query.order_by(Post.timestamp.desc()).all()
+	return render_template('index.html',form=form,posts=posts)
 
 # 举例演示使用权限检查装饰器
 @main.route('/admin')
@@ -51,7 +60,8 @@ def user(username):
 	#user = User.query.filter_by(username=username).first_or_404()
 	if user is None:
 		abort(404)
-	return render_template('user.html',user=user)
+	posts =user.posts.order_by(Post.timestamp.desc()).all()
+	return render_template('user.html',user=user,posts=posts)
 
 @main.route('/edit-profile',methods=['get','post'])
 @login_required
@@ -95,3 +105,4 @@ def edit_profile_admin(id):
 	form.location.data = user.location
 	form.about_me.data = user.about_me
 	return render_template('edit_profile.html',form=form,user=user)
+
