@@ -1,6 +1,6 @@
 #！/usr/bin/env python
 # -*- coding:utf-8 -*-
-from flask import render_template,session,redirect,url_for,current_app,flash,abort
+from flask import render_template,session,redirect,url_for,current_app,flash,abort,request
 from . import main
 from .forms import NameForm,EditProflieForm,EditProflieAdminForm,PostForm
 from flask_login import login_required, current_user
@@ -16,21 +16,6 @@ from flask_login import login_required
 # 使用蓝本自定义路由
 @main.route('/', methods=['get', 'post'])
 def index():
-	# name = None
-	# form = NameForm()
-	# if form.validate_on_submit():
-	# 	user = User.query.filter_by(username=form.name.data).first()
-	# 	if user is None:
-	# 		user = User(username=form.name.data)
-	# 		db.session.add(user)
-	# 		session['known']=False
-	# 		if current_app.config['FLASKY_ADMIN']:
-	# 			send_mail(current_app.config['FLASKY_ADMIN'],'New user','mail/new_user',user=user)
-	# 	else:
-	# 		session['known'] = True
-	# 	session['name']=form.name.data
-	# 	return redirect(url_for('.index')) # 蓝本中index函数在main.index下
-	# return render_template('index.html', name=session.get('name'), form=form, known=session.get('known',False))
 	form = PostForm()
 	# 检查用户是否有写文章的权限并检查是否可以通过验证
 	if current_user.can(Permission.WRITE_ARTICLES) and form.validate_on_submit():
@@ -39,7 +24,9 @@ def index():
 		db.session.add(post)
 		return redirect(url_for('.index'))
 	posts = Post.query.order_by(Post.timestamp.desc()).all()
-	return render_template('index.html',form=form,posts=posts)
+	page =request.args.get('page',1,type=int)
+	pagination= Post.query.order_by(Post.timestamp.desc()).paginate()
+	return render_template('index.html',form=form,posts=posts,)
 
 # 举例演示使用权限检查装饰器
 @main.route('/admin')

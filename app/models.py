@@ -57,18 +57,20 @@ class Post(db.Model):
 	body = db.Column(db.Text)
 	timestamp = db.Column(db.DateTime,index=True,default=datetime.utcnow)
 	author_id=db.Column(db.Integer,db.ForeignKey('users.id'))
+
 	@staticmethod
 	def generate_fake(count=100):
 		from random import seed,randint
 		import forgery_py
 
 		seed()
-		user_count=User.qurey.count()
+		user_count=User.query.count()
 		for i in range(count):
 			# 为每篇文章随机制定一个用户，offset 会跳过参数中制定的记录数量，设定一个随机的偏移值
+			#上面的u = User.query.offset(randint(0,user_count-1)).first()这一行，可以换个写法，u = User.query.filter_by(id=randint(1,user_count)).first()，但是这个写法有一个问题，就是万一数据库当中有数据被删除过，当中的id是跳开的，就不能完全随机了。
 			u = User.query.offset(randint(0,user_count -1)).first()
 			p=Post(body=forgery_py.lorem_ipsum.sentences(randint(1,3)),
-				   timestramp=forgery_py.date.date(True),
+				   timestamp=forgery_py.date.date(True),
 				   author=u,)
 			db.session.add(p)
 			db.session.commit()
@@ -188,7 +190,7 @@ class User(UserMixin,db.Model):
 		from sqlalchemy.exc import IntegrityError
 		from random import seed
 		import forgery_py
-
+		# 从random模块里面导入的seed函数，这个函数叫作种子函数
 		seed()
 		for i in range(count):
 			u = User(email=forgery_py.internet.email_address(),
