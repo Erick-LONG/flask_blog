@@ -46,6 +46,7 @@ def for_admins_only():
 def for_moderator_only():
 	return 'For comment moderator'
 
+
 @main.route('/user/<username>')
 def user(username):
 	user = User.query.filter_by(username=username).first()

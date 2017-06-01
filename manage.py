@@ -16,6 +16,7 @@ def make_shell_context():
 	return dict(app=app, db=db, User=User, Role=Role,Post=Post)
 manager.add_command("shell", Shell(make_context=make_shell_context))
 
+
 @manager.command
 def test():
 	'''启动单元测试'''
