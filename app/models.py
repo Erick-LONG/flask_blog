@@ -224,6 +224,7 @@ class Permission:
 	MODERATE_COMMENTS=0x08
 	ADMINISTER=0x80
 
+
 class AnonymousUser(AnonymousUserMixin):
 	def can(self, permissions):
 		return False
