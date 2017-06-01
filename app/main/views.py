@@ -1,6 +1,6 @@
 #！/usr/bin/env python
 # -*- coding:utf-8 -*-
-from flask import render_template,session,redirect,url_for,current_app,flash,abort
+from flask import render_template,session,redirect,url_for,current_app,flash,abort,request
 from . import main
 from .forms import NameForm,EditProflieForm,EditProflieAdminForm,PostForm
 from flask_login import login_required, current_user
@@ -16,21 +16,6 @@ from flask_login import login_required
 # 使用蓝本自定义路由
 @main.route('/', methods=['get', 'post'])
 def index():
-	# name = None
-	# form = NameForm()
-	# if form.validate_on_submit():
-	# 	user = User.query.filter_by(username=form.name.data).first()
-	# 	if user is None:
-	# 		user = User(username=form.name.data)
-	# 		db.session.add(user)
-	# 		session['known']=False
-	# 		if current_app.config['FLASKY_ADMIN']:
-	# 			send_mail(current_app.config['FLASKY_ADMIN'],'New user','mail/new_user',user=user)
-	# 	else:
-	# 		session['known'] = True
-	# 	session['name']=form.name.data
-	# 	return redirect(url_for('.index')) # 蓝本中index函数在main.index下
-	# return render_template('index.html', name=session.get('name'), form=form, known=session.get('known',False))
 	form = PostForm()
 	# 检查用户是否有写文章的权限并检查是否可以通过验证
 	if current_user.can(Permission.WRITE_ARTICLES) and form.validate_on_submit():
@@ -38,8 +23,15 @@ def index():
 		post = Post(body = form.body.data,author=current_user._get_current_object())
 		db.session.add(post)
 		return redirect(url_for('.index'))
-	posts = Post.query.order_by(Post.timestamp.desc()).all()
-	return render_template('index.html',form=form,posts=posts)
+	#posts = Post.query.order_by(Post.timestamp.desc()).all()
+	# 分页显示博客文章列表
+	# 页数请求从查询字符串中获取，如果没有制定默认为第一页
+	page = request.args.get('page',1,type=int)
+	# 显示分页需要用到sqlachemy提供的paginate方法
+	pagination=Post.query.order_by(Post.timestamp.desc()).paginate(page,per_page=current_app.config['FLASKY_POSTS_PER_PAGE'],error_out=False)
+	# 显示当前页面的记录
+	posts = pagination.items
+	return render_template('index.html',form=form,posts=posts,pagination=pagination)
 
 # 举例演示使用权限检查装饰器
 @main.route('/admin')
@@ -105,4 +97,26 @@ def edit_profile_admin(id):
 	form.location.data = user.location
 	form.about_me.data = user.about_me
 	return render_template('edit_profile.html',form=form,user=user)
+
+# 文章固定链接
+@main.route('/post/<int:id>')
+def post(id):
+	post=Post.query.get_or_404(id)
+	return render_template('post.html',post=[post])
+
+# 编辑博客路由
+@main.route('/edit/<int:id>',methods=['get','post'])
+@login_required
+def edit(id):
+	post=Post.query.get_or_404(id)
+	if current_user != post.author and not current_user.can(Permission.ADMINISTER):
+		abort(403)
+	form = PostForm()
+	if form.validate_on_submit():
+		post.body=form.body.data
+		db.session.add(post)
+		flash('文章已经更新')
+		return redirect(url_for('post',id=post.id))
+	form.body.data=post.body
+	return render_template('edit_post.html',form=form)
 

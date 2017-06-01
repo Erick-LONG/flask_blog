@@ -9,6 +9,9 @@ from flask import current_app,request
 from . import db
 from datetime import datetime
 import hashlib
+from markdown import markdown
+import bleach
+
 # 加载用户的回调函数
 @login_manager.user_loader
 def load_user(user_id):
@@ -57,21 +60,27 @@ class Post(db.Model):
 	body = db.Column(db.Text)
 	timestamp = db.Column(db.DateTime,index=True,default=datetime.utcnow)
 	author_id=db.Column(db.Integer,db.ForeignKey('users.id'))
+	body_html =db.Column(db.Text)
 	@staticmethod
 	def generate_fake(count=100):
 		from random import seed,randint
 		import forgery_py
 
 		seed()
-		user_count=User.qurey.count()
+		user_count=User.query.count()
 		for i in range(count):
 			# 为每篇文章随机制定一个用户，offset 会跳过参数中制定的记录数量，设定一个随机的偏移值
 			u = User.query.offset(randint(0,user_count -1)).first()
 			p=Post(body=forgery_py.lorem_ipsum.sentences(randint(1,3)),
-				   timestramp=forgery_py.date.date(True),
+				   timestamp=forgery_py.date.date(True),
 				   author=u,)
 			db.session.add(p)
 			db.session.commit()
+	@staticmethod
+	def on_changed_body(target,value,oldvalue,initiator):
+		allowed_tags=['a','abbr','acronym','b','blockquote','code','em','i','li','ol','pre','strong','ul','h1','h2','h3','p']
+		target.body_html=bleach.linkify(bleach.clean(markdown(value,output_format='html'),tags=allowed_tags,strip=True))
+db.event.listen(Post.body,'set',Post.on_changed_body)
 
 class User(UserMixin,db.Model):
 	def __init__(self,**kwargs):

@@ -7,10 +7,12 @@ from flask_mail import Mail
 from flask_sqlalchemy import SQLAlchemy
 from config import config
 from flask_login import LoginManager
+from flask_pagedown import PageDown
 bootstrap = Bootstrap()
 mail =Mail()
 moment = Moment()
 db = SQLAlchemy()
+pagedown = PageDown()
 #初始化Flask-Login
 login_manager=LoginManager()
 login_manager.session_protection='strong' # 记录客户端ip，用户代理信息，发现异动，登出用户
@@ -26,6 +28,7 @@ def create_app(config_name):
     moment.init_app(app)
     db.init_app(app)
     login_manager.init_app(app) #初始化登陆
+    pagedown.init_app(app)
     # 附加使用蓝本路由和错误页面
     from .main import main as main_blueprint
     app.register_blueprint(main_blueprint)
