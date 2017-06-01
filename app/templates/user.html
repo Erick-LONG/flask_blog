@@ -7,22 +7,20 @@
     <div class="profile-header">
         <h1>{{ user.username }}</h1>
         {% if user.name or user.location %}
+            <p>{% if user.name %}<b>用户名：</b>{{ user.name }}{% endif %}</p>
             <p>
-                {% if user.name %}{{ user.name }}{% endif %}
                 {% if user.location %}
-                    来自 <a href="http://map.baidu.com/?{{ user.location }}">{{ user.location }}</a>
+                    <b>位置：</b> <a href="http://map.baidu.com/?{{ user.location }}">{{ user.location }}</a>
                 {% endif %}
             </p>
         {% endif %}
         {% if current_user.is_administrator() %}
-            <p><a href="mailto:{{ user.email }}">{{ user.email }}</a></p>
+            <p><b>邮箱：</b><a href="mailto:{{ user.email }}">{{ user.email }}</a></p>
         {% endif %}
-        {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}
-        <p>
-            注册时间：{{ moment(user.member_since).format('L') }}.
-            最后登陆时间:{{ moment(user.last_seen).fromNow() }}.
-        </p>
-        <p>总共发表博客 {{ user.posts.count() }} 篇</p>
+        {% if user.about_me %}<p><b>关于我：</b>{{ user.about_me }}</p>{% endif %}
+        <p><b>注册时间：</b>{{ moment(user.member_since).format('YYYY年M月D日') }}.</p>
+        <p><b> 最后登陆时间：</b>{{ moment(user.last_seen).fromNow() }}.</p>
+        <p><b> 总共发表博客   </b>{{ user.posts.count() }}<b> 篇</b></p>
         <p>
             {% if user == current_user %}
             <a  class="btn btn-default" href="{{ url_for('.edit_profile') }}">编辑资料</a>
