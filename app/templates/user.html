@@ -10,7 +10,7 @@
             <p>{% if user.name %}<b>用户名：</b>{{ user.name }}{% endif %}</p>
             <p>
                 {% if user.location %}
-                    <b>位置：</b> <a href="http://map.baidu.com/?{{ user.location }}">{{ user.location }}</a>
+                    <b>位置：</b> <a href="http://ditu.amap.com/search?query={{ user.location }}">{{ user.location }}</a>
                 {% endif %}
             </p>
         {% endif %}
