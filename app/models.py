@@ -82,6 +82,12 @@ class Post(db.Model):
 		target.body_html=bleach.linkify(bleach.clean(markdown(value,output_format='html'),tags=allowed_tags,strip=True))
 db.event.listen(Post.body,'set',Post.on_changed_body)
 
+class Follow(db.Model):
+	__tablename__ = 'follows'
+	follower_id = db.Column(db.Integer,db.ForeignKey('users.id'),primary_key=True)
+	followed_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+	timestamp=db.Column(db.DateTime,default=datetime.utcnow)
+
 class User(UserMixin,db.Model):
 	def __init__(self,**kwargs):
 		super(User,self).__init__(**kwargs)# 调用父类的构造函数
@@ -108,9 +114,26 @@ class User(UserMixin,db.Model):
 	last_seen= db.Column(db.DateTime(), default=datetime.utcnow)  # 初始值是当前时间
 	avatar_hash = db.Column(db.String(32))# 头像哈希值存储到数据库
 	posts = db.relationship('Post',backref = 'author',lazy='dynamic')
+	# 为了消除外键间的歧义，定义关系时使用foreign_keys指定外键
+	# db.backref指的是回引Follow模型，lazy='joined'可以实现立即一次性完成从连结查询中加载相关对象
+	# 如果把joined换成select就会成倍增加数据库查询次数
+	# lazy='dynamic' 直接返回查询对象，可以在执行查询之前添加过滤器
+	# cascade 参数配置在父对象上执行的操作对相关对象的影响
+	# 层叠选项可设定添加用户到数据库会话中，自动把所有的关系对象添加到会话中
+	# delete-orphan的作用是把默认层叠行为（把对象联结的所有相关对象的外键设为空值），变成删除记录后把指向该记录的实体也删除，这样就有效的销毁的联结
+	# 'all,delete-orphan'是逗号分隔的层叠选项，表示启用所有默认层叠选项并删除关联记录，all表示除了delete-orphan之外的所有层叠选项，
+	followed=db.relationship('Follow',foreign_keys=[Follow.follower_id],
+							 backref=db.backref('follower',lazy='joined'),
+							 lazy='dynamic',
+							 cascade='all,delete-orphan')
+	followers = db.relationship('Follow', foreign_keys=[Follow.followed_id],
+							   backref=db.backref('followed', lazy='joined'),
+							   lazy='dynamic',
+							   cascade='all,delete-orphan')
 	@property
 	def password(self):
 		raise AttributeError('密码不是一个可读属性') #只写属性
+
 	@password.setter
 	def password(self,password):
 		self.password_hash = generate_password_hash(password)
@@ -121,6 +144,7 @@ class User(UserMixin,db.Model):
 	def generate_confirmation_token(self,expiration=3600):
 		s = Serializer(current_app.config['SECRET_KEY'],expiration)
 		return s.dumps({'confirm':self.id})
+
 	def confirm(self,token):
 		s=Serializer(current_app.config['SECRET_KEY'])
 		try:
@@ -174,10 +198,12 @@ class User(UserMixin,db.Model):
 	@login_manager.user_loader
 	def load_user(user_id):
 		return User.query.get(int(user_id))
+
 	def can(self,permissions):
 		# 在请求和赋予角色这两种权限进行位的“与”运算，如果成立，则允许用户执行此项操作
 		return self.role is not None and \
 			   (self.role.permissions & permissions)==permissions
+
 	def is_administrator(self): # 认证为管理员角色判断
 		return self.can(Permission.ADMINISTER)
 
@@ -192,6 +218,7 @@ class User(UserMixin,db.Model):
 			url='http://www.gravatar.com/avatar'
 		hash = self.avatar_hash or hashlib.md5(self.email.encode('utf-8')).hexdigest()
 		return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(url=url,hash=hash,size=size,default=default,rating=rating)
+
 	@staticmethod
 	def generate_fake(count = 100):
 		from sqlalchemy.exc import IntegrityError
@@ -214,6 +241,28 @@ class User(UserMixin,db.Model):
 			# 邮箱和用户名如果随机出重复的数据，则回滚到之前的对话，并不会写入到数据库
 			except IntegrityError:
 				db.session.rollback()
+
+	def follow(self,user):
+		if not self.is_following(user):
+			# 把关注着和被关注着联结在一起传入构造器并添加到数据库中
+			f = Follow(follower=self,followed=user)
+			db.session.add(f)
+
+	def unfollow(self,user):
+		# followed找到联结用户和被关注用户的实例
+		f = self.followed.filter_by(followed_id=user.id).first()
+		if f :
+			# 销毁用户之间的联结，删除这个对象即可
+			db.session.delete(f)
+
+	def is_following(self,user):
+		# 搜索两边指定的用户，如果找到返回True
+		return self.followed.filter_by(followed_id=user.id).first() is not None
+
+	def is_followed_by(self,user):
+		# 搜索两边指定的用户，如果找到返回True
+		return self.followers.filter_by(follower_id=user.id).first() is not None
+
 	def __repr__(self):
 		return '<User %r>' % self.username
 
@@ -232,3 +281,4 @@ class AnonymousUser(AnonymousUserMixin):
 		return False
 # 用户未登录时current_user的值，并且不用用户登陆即可检查用户权限
 login_manager.anonymous_user=AnonymousUser
+
