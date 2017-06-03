@@ -122,3 +122,62 @@ def edit(id):
 
 	return render_template('edit_post.html',form=form)
 
+# 用户点击关注按钮后执行/follow/<username>路由
+@main.route('/follow/<username>')
+@login_required
+@permission_required(Permission.FOLLOW)
+def follow(username):
+	user = User.query.filter_by(username=username).first()
+	if user is None:
+		flash('用户不存在')
+		return redirect(url_for('.index'))
+	if current_user.is_following(user):
+		flash('你已经关注他了')
+		return redirect(url_for('.user',username=username))
+	current_user.follow(user)
+	flash('关注成功')
+	return redirect(url_for('.user',username=username))
+
+# 用户点击取消关注按钮后执行/unfollow/<username>路由
+@main.route('/unfollow/<username>')
+@login_required
+@permission_required(Permission.FOLLOW)
+def unfollow(username):
+	user = User.query.filter_by(username=username).first()
+	if user is None:
+		flash('用户不存在')
+		return redirect(url_for('.index'))
+	if not current_user.is_following(user):
+		flash('你还没有关注他')
+		return redirect(url_for('.user',username=username))
+	current_user.unfollow(user)
+	flash('取消关注成功')
+	return redirect(url_for('.user',username=username))
+
+# 用户点击关注者数量后调用/followers/<username>
+@main.route('/followers/<username>')
+def followers(username):
+	user = User.query.filter_by(username=username).first()
+	if user is None:
+		flash('用户不存在')
+		return redirect(url_for('.index'))
+	page = request.args.get('page',1,type=int)
+	pagination = user.followers.paginate(page,per_page=current_app.config['FLASKY_FOLLOWERS_PER_PAGE'],
+										 error_out=False)
+	follows =[{'user':item.follower,'timestamp':item.timestamp} for item in pagination.items]
+	return render_template('followers.html',user=user,title='粉丝列表',
+						   endpoint='.followers',pagination=pagination,follows=follows)
+
+
+# 用户点击粉丝数量后调用/followed/<username>
+@main.route('/followed_by/<username>')
+def followed_by(username):
+	user = User.query.filter_by(username=username).first()
+	if user is None:
+		flash('用户不存在')
+		return redirect(url_for('.index'))
+	page = request.args.get('page',1,type=int)
+	pagination = user.followed.paginate(page,per_page=current_app.config['FLASKY_FOLLOWERS_PER_PAGE'],error_out=False)
+	follows=[{'user':item.followed,'timestamp':item.timestamp} for item in pagination.items]
+	return render_template('followers.html',user=user,title='关注列表',
+						   endpoint='.followed_by',pagination=pagination,follows=follows)
