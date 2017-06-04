@@ -10,6 +10,7 @@ class Config:
     FLASKY_ADMIN = '834424581@qq.com' #os.environ.get('FLASKY_ADMIN') 收件人
     FLASKY_POSTS_PER_PAGE=15
     FLASKY_FOLLOWERS_PER_PAGE=15
+    FLASKY_COMMENTS_PER_PAGE=15
     @staticmethod
     def init_app(app):
         pass

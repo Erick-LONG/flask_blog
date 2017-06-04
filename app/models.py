@@ -61,11 +61,12 @@ class Post(db.Model):
 	timestamp = db.Column(db.DateTime,index=True,default=datetime.utcnow)
 	author_id=db.Column(db.Integer,db.ForeignKey('users.id'))
 	body_html =db.Column(db.Text)
+	comments = db.relationship('Comment', backref='post', lazy='dynamic')
+
 	@staticmethod
 	def generate_fake(count=100):
 		from random import seed,randint
 		import forgery_py
-
 		seed()
 		user_count=User.query.count()
 		for i in range(count):
@@ -76,11 +77,28 @@ class Post(db.Model):
 				   author=u,)
 			db.session.add(p)
 			db.session.commit()
+
 	@staticmethod
 	def on_changed_body(target,value,oldvalue,initiator):
 		allowed_tags=['a','abbr','acronym','b','blockquote','code','em','i','li','ol','pre','strong','ul','h1','h2','h3','p']
 		target.body_html=bleach.linkify(bleach.clean(markdown(value,output_format='html'),tags=allowed_tags,strip=True))
 db.event.listen(Post.body,'set',Post.on_changed_body)
+
+class Comment(db.Model):
+	__tablename__ = 'comments'
+	id = db.Column(db.Integer, primary_key=True)
+	body = db.Column(db.Text)
+	timestamp = db.Column(db.DateTime,index=True,default=datetime.utcnow)
+	body_html = db.Column(db.Text)
+	disabled = db.Column(db.Boolean) # 管理员用来查禁不当评论
+	author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+	post_id = db.Column(db.Integer,db.ForeignKey('posts.id'))
+
+	@staticmethod
+	def on_changed_body(target,value,oldvalue,initiator):
+		allowed_tags=['a','abbr','acronym','b','code','em','i','strong']
+		target.body_html=bleach.linkify(bleach.clean(markdown(value,output_format='html'),tags=allowed_tags,strip=True))
+db.event.listen(Comment.body,'set',Comment.on_changed_body)
 
 class Follow(db.Model):
 	__tablename__ = 'follows'
@@ -116,6 +134,7 @@ class User(UserMixin,db.Model):
 	member_since = db.Column(db.DateTime(), default=datetime.utcnow)  # default 可以接受函数为默认值，在需要的时候回自定调用指定的函数，所以不需要加（）
 	last_seen= db.Column(db.DateTime(), default=datetime.utcnow)  # 初始值是当前时间
 	avatar_hash = db.Column(db.String(32))# 头像哈希值存储到数据库
+	comments = db.relationship('Comment',backref='author',lazy='dynamic')
 	posts = db.relationship('Post',backref = 'author',lazy='dynamic')
 	# 为了消除外键间的歧义，定义关系时使用foreign_keys指定外键
 	# db.backref指的是回引Follow模型，lazy='joined'可以实现立即一次性完成从连结查询中加载相关对象
