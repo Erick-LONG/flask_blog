@@ -5,12 +5,13 @@ from flask_login import UserMixin,AnonymousUserMixin # 匿名用户角色
 from . import login_manager
 from flask_login import login_required
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from flask import current_app,request
+from flask import current_app,request,url_for
 from . import db
 from datetime import datetime
 import hashlib
 from markdown import markdown
 import bleach
+from app.exceptions import ValidationError
 
 # 加载用户的回调函数
 @login_manager.user_loader
@@ -78,11 +79,31 @@ class Post(db.Model):
 			db.session.add(p)
 			db.session.commit()
 
+	def to_json(self):
+		json_post = {
+			'url':url_for('api.get_post',id = self.id,_external=True),
+			'body':self.body,
+			'body_html':self.body_html,
+			'timestramp':self.timestamp,
+			'author':url_for('api.get_user',id=self.author_id,_external=True),
+			'comments':url_for('api.get_post_comments',id = self.id,_external=True),
+			'comments_count':self.comments.count()
+		}
+		return json_post
+
+	@staticmethod
+	def form_json(json_post):
+		body = json_post.get('body')
+		if body is None or body=='':
+			raise ValidationError('文章没有body字段')
+		return Post(body=body)
+
 	@staticmethod
 	def on_changed_body(target,value,oldvalue,initiator):
 		allowed_tags=['a','abbr','acronym','b','blockquote','code','em','i','li','ol','pre','strong','ul','h1','h2','h3','p']
 		target.body_html=bleach.linkify(bleach.clean(markdown(value,output_format='html'),tags=allowed_tags,strip=True))
 db.event.listen(Post.body,'set',Post.on_changed_body)
+
 
 class Comment(db.Model):
 	__tablename__ = 'comments'
@@ -298,6 +319,34 @@ class User(UserMixin,db.Model):
 				user.follow(user)
 				db.session.add(user)
 				db.session.commit()
+
+	def generrate_auth_token(self,expiration):
+		# 生成验证Token
+		s= Serializer(current_app.config['SECRET_KEY'],expires_in=expiration)
+		return s.dumps({'id':self.id})
+
+	@staticmethod
+	# 因为只有解码后才知道用户是谁，所以用静态方法
+	def verify_auth_token(token):
+		# 验证token
+		s = Serializer(current_app.config['SECRET_KEY'])
+		try:
+			data = s.loads(token)
+		except:
+			return None
+		return User.query.get(data['id'])
+
+	def to_json(self):
+		json_user = {
+			'url':url_for('api.get_post',id = self.id,_external=True),
+			'body':self.username,
+			'member_since':self.member_since,
+			'last_seen':self.last_seen,
+			'posts':url_for('api.get_user_posts',id=self.id,_external=True),
+			'followed_posts':url_for('api.get_user_followed_posts',id = self.id,_external=True),
+			'posts_count':self.posts.count()
+		}
+		return json_user
 
 	def __repr__(self):
 		return '<User %r>' % self.username
