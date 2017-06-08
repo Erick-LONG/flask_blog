@@ -84,7 +84,7 @@ class Post(db.Model):
 			'url':url_for('api.get_post',id = self.id,_external=True),
 			'body':self.body,
 			'body_html':self.body_html,
-			'timestramp':self.timestamp,
+			'timestamp':self.timestamp,
 			'author':url_for('api.get_user',id=self.author_id,_external=True),
 			'comments':url_for('api.get_post_comments',id = self.id,_external=True),
 			'comments_count':self.comments.count()
@@ -320,7 +320,7 @@ class User(UserMixin,db.Model):
 				db.session.add(user)
 				db.session.commit()
 
-	def generrate_auth_token(self,expiration):
+	def generate_auth_token(self,expiration):
 		# 生成验证Token
 		s= Serializer(current_app.config['SECRET_KEY'],expires_in=expiration)
 		return s.dumps({'id':self.id})

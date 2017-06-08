@@ -1,12 +1,11 @@
 #！/usr/bin/env python
 # -*- coding:utf-8 -*-
-from flask import jsonify, request, g, abort, url_for, current_app
+from flask import jsonify, request, g, url_for, current_app
 from .. import db
 from ..models import Post, Permission
 from . import api
 from .decorators import permission_required
 from .errors import forbidden
-
 
 @api.route('/posts/')
 def get_posts():
@@ -46,13 +45,15 @@ def new_post():
         {'Location': url_for('api.get_post', id=post.id, _external=True)}
 
 
+# 更新现有资源
 @api.route('/posts/<int:id>', methods=['PUT'])
 @permission_required(Permission.WRITE_ARTICLES)
 def edit_post(id):
     post = Post.query.get_or_404(id)
     if g.current_user != post.author and \
             not g.current_user.can(Permission.ADMINISTER):
-        return forbidden('Insufficient permissions')
+        return forbidden('无权限')
+    # 更新body
     post.body = request.json.get('body', post.body)
     db.session.add(post)
     return jsonify(post.to_json())

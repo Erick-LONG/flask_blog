@@ -3,7 +3,7 @@
 from flask import render_template,request,jsonify
 from . import main
 
-#主程序的errorhandler
+#主程序的errorhandler使用HTTP内容协商处理错误
 @main.app_errorhandler(404)
 def page_not_find(e):
     # 程序检查Accept请求首部request.accept_mimetypes，根据首部的值决定客户端期望接收的响应格式
