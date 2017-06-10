@@ -5,7 +5,7 @@ from selenium import webdriver
 from app import create_app,db
 from app.models import User,Role,Post
 from flask import url_for
-import re,json
+import re,json,time
 import base64
 import threading
 
@@ -45,6 +45,8 @@ class SeleniumTestCase(unittest.TestCase):
 
             # 在一个线程中启动Flask服务器
             threading.Thread(target=cls.app.run).start()
+
+            time.sleep(1)
 
     @classmethod
     def tearDownClass(cls):

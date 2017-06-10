@@ -8,6 +8,7 @@ from .. import db
 from ..models import User,Role,Post,Comment
 from ..email import send_mail
 from flask import abort
+from flask_sqlalchemy import get_debug_queries
 
 from app.decorators import admin_required,permission_required
 from ..models import Permission
@@ -265,3 +266,10 @@ def server_shutdown():
         abort(500)
     shutdown()
     return 'Shutting down....'
+
+@main.after_app_request
+def after_request(response):
+    for query in get_debug_queries():
+        if query.duration >= current_app.config['FLASK_SLOW_DB_QUERY_TIME']:
+            current_app.logger.waring('Slow query: %s\nParameters: %s\nDuration: %fs\nContext: %s\n' % (query.statement, query.parameters, query.duration,query.context))
+    return response
