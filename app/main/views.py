@@ -267,9 +267,12 @@ def server_shutdown():
     shutdown()
     return 'Shutting down....'
 
+
 @main.after_app_request
 def after_request(response):
     for query in get_debug_queries():
+        # statement SQL语句；parameters SQL使用的参数；duration 耗时；context 查询源码中所处位置的字符串
         if query.duration >= current_app.config['FLASK_SLOW_DB_QUERY_TIME']:
-            current_app.logger.waring('Slow query: %s\nParameters: %s\nDuration: %fs\nContext: %s\n' % (query.statement, query.parameters, query.duration,query.context))
+            current_app.logger.waring('Slow query: %s\nParameters: %s\nDuration: %fs\nContext: %s\n' % (
+                query.statement, query.parameters, query.duration, query.context))
     return response
