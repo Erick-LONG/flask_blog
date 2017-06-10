@@ -45,6 +45,14 @@ def test(coverage=False):
 		print('HTML 版本：file://%s/index.html'% covdir)
 		COV.erase()
 
+@manager.command
+def profile(length=25,profile_dir=None):
+	'''启动请求分析器'''
+	from werkzeug.contrib.profiler import ProfilerMiddleware
+	app.wsgi_app = ProfilerMiddleware(app.wsgi_app,restrictions=[length],profile_dir=profile_dir)
+	app.run()
+
+
 if __name__ == '__main__':
 	manager.run()
 
