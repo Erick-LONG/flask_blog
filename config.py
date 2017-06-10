@@ -11,6 +11,7 @@ class Config:
     FLASKY_POSTS_PER_PAGE=15
     FLASKY_FOLLOWERS_PER_PAGE=15
     FLASKY_COMMENTS_PER_PAGE=15
+    WTF_CSRF_ENABLED=False # 测试中禁用CSRF保护
     @staticmethod
     def init_app(app):
         pass

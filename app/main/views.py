@@ -253,3 +253,15 @@ def moderate_disable(id):
     comment.disabled = True
     db.session.add(comment)
     return redirect(url_for('.moderate',page=request.args.get('page',1,type=int)))
+
+# 当所有测试完成之后关闭服务器的路由
+@main.route('/shutdown')
+def server_shutdown():
+    # 只有在测试环境中，当前路由可用
+    if not current_app.testing:
+        abort(404)
+    shutdown = request.environ.get('werkzeug.server.shutdown')
+    if not shutdown:
+        abort(500)
+    shutdown()
+    return 'Shutting down....'
