@@ -17,7 +17,7 @@ class Config:
     FLASKY_FOLLOWERS_PER_PAGE=15
     FLASKY_COMMENTS_PER_PAGE=15
     WTF_CSRF_ENABLED=False # 测试中禁用CSRF保护
-
+    SSL_DISABLE=True # 配置是否使用SSL
     FLASK_SLOW_DB_QUERY_TIME=0.5
     SQLALCHEMY_RECORD_QUERIES=True # 启用缓慢查询记录功能的配置-启用记录查询统计数据的功能
 
@@ -67,9 +67,39 @@ class ProductionConfig(Config):
         mail_handler.setLevel(logging.ERROR)
         app.logger.addHandler(mail_handler)
 
+class HerokuConfig(ProductionConfig):
+    SSL_DISABLE=bool(os.environ.get('SSL_DISABLE'))
+    @classmethod
+    def init_app(cls,app):
+        ProductionConfig.init_app(app)
+        # 输出到stderr
+        import logging
+        from logging import StreamHandler
+        file_handler = StreamHandler()
+        file_handler.setLevel(logging.WARNING)
+        app.logger.addHandler(file_handler)
+
+        # 处理代理服务器的首部
+        from werkzeug.contrib.fixers import ProxyFix
+        app.wsgi_app=ProxyFix(app.wsgi_app)
+
+class UnixConfig(ProductionConfig):
+    @classmethod
+    def init_app(cls, app):
+        ProductionConfig.init_app(app)
+        # 写入系统日志
+        import logging
+        from logging.handlers import SysLogHandler
+        syslog_handler = SysLogHandler()
+        syslog_handler.setLevel(logging.WARNING)
+        app.logger.addHandler(syslog_handler)
+
+
 config={
     'development':DevelopmentConfig,
     'testing':TestingConfig,
     'production':ProductionConfig,
-    'default':DevelopmentConfig
+    'default':DevelopmentConfig,
+    'heroku': HerokuConfig,
+    'unix': UnixConfig,
 }
